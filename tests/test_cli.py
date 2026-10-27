@@ -5,6 +5,7 @@ proposes opening links unless a test asks for that path explicitly.
 """
 
 import json
+import os
 import subprocess
 import sys
 import zipfile
@@ -130,3 +131,22 @@ def test_previous_export_is_archived(full_export, dirs):
     assert result.returncode == 0, result.stderr
     assert not old.exists()
     assert zipfile.ZipFile(old.with_suffix(".zip")).namelist() == ["conversations.json"]
+
+
+def test_assemble_requires_a_backup_dir(full_export, dirs):
+    env = {k: v for k, v in os.environ.items() if k != "CLAUDE_EXPORT_BACKUP_DIR"}
+
+    result = run(*stage_args(full_export, dirs), "--assemble", env=env)
+
+    assert result.returncode != 0
+    assert "--backup-dir" in result.stderr
+    assert not any(dirs["staging"].iterdir()), "nothing should be staged before failing"
+
+
+def test_backup_dir_from_environment(full_export, dirs):
+    env = {**os.environ, "CLAUDE_EXPORT_BACKUP_DIR": str(dirs["backup"])}
+
+    result = run(*stage_args(full_export, dirs), "--assemble", env=env)
+
+    assert result.returncode == 0, result.stderr
+    assert (dirs["backup"] / EXPORT_NAME / "conversations.json").exists()

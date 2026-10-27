@@ -14,6 +14,7 @@ legacy flat export layout. URLs are never printed or written anywhere.
 import argparse
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -23,7 +24,7 @@ import zipfile
 from datetime import UTC, datetime
 from pathlib import Path
 
-DEFAULT_BACKUP_DIR = Path.home() / "Claude Export Backup"
+BACKUP_DIR_ENV = "CLAUDE_EXPORT_BACKUP_DIR"
 STATE_FILE = "download-state.json"
 SETTLE_SECONDS = 2
 
@@ -332,11 +333,13 @@ def main():
     ap.add_argument(
         "--backup-dir",
         type=Path,
-        default=DEFAULT_BACKUP_DIR,
-        help=f"where the assembled export is installed (default: {DEFAULT_BACKUP_DIR})",
+        default=os.environ.get(BACKUP_DIR_ENV),
+        help=f"where --assemble installs the export (default: ${BACKUP_DIR_ENV})",
     )
     ap.add_argument("--yes", action="store_true", help="answer every prompt with yes")
     args = ap.parse_args()
+    if args.assemble and args.backup_dir is None:
+        ap.error(f"--assemble needs --backup-dir or ${BACKUP_DIR_ENV}")
 
     if not args.manifest.exists():
         die(f"manifest not found: {args.manifest}")
