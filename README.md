@@ -1,5 +1,6 @@
 # claude-export-assembler
 
+[![check](https://github.com/aavanian/claude-export-assembler/actions/workflows/check.yml/badge.svg)](https://github.com/aavanian/claude-export-assembler/actions/workflows/check.yml)
 [![License: GPL v3](https://img.shields.io/badge/license-GPLv3-blue.svg)](LICENSE)
 ![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)
 ![No dependencies](https://img.shields.io/badge/dependencies-none-brightgreen.svg)
@@ -109,7 +110,9 @@ in the closing summary.
 ```
 
 Formats and lints with ruff, then runs the end-to-end tests with pytest, all
-through uv.
+through uv. With `CI` set it only reports formatting and lint problems instead
+of fixing them; that is how the GitHub workflow runs it, on macOS and Linux
+with Python 3.11 and 3.14.
 
 ## License
 

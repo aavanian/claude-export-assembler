@@ -1,11 +1,20 @@
 #!/bin/bash
 set -euo pipefail
 
+# Locally, fix what can be fixed; under CI, only report it.
+format=(uv run ruff format)
+lint=(uv run ruff check)
+if [ -n "${CI:-}" ]; then
+    format+=(--check --diff)
+else
+    lint+=(--fix)
+fi
+
 echo "=== Running ruff format ==="
-uv run ruff format claude_export.py tests
+"${format[@]}" claude_export.py tests
 
 echo "=== Running ruff check ==="
-uv run ruff check --fix claude_export.py tests
+"${lint[@]}" claude_export.py tests
 
 echo "=== Running pytest ==="
 uv run pytest -v
