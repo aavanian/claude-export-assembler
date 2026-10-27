@@ -150,3 +150,14 @@ def test_backup_dir_from_environment(full_export, dirs):
 
     assert result.returncode == 0, result.stderr
     assert (dirs["backup"] / EXPORT_NAME / "conversations.json").exists()
+
+
+def test_missing_parts_propose_opener_without_revealing_urls(tmp_path, dirs):
+    manifest = write_manifest(tmp_path / "manifest.json", [("conversations", "conv-1.zip")])
+    opener = {"darwin": "open", "linux": "xdg-open"}[sys.platform]
+
+    result = run(*stage_args(manifest, dirs))
+
+    assert result.returncode != 0, "no terminal to confirm on, so it must stop"
+    assert f"| xargs -n1 {opener}" in result.stdout
+    assert "claude.invalid" not in result.stdout + result.stderr

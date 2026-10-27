@@ -27,6 +27,7 @@ from pathlib import Path
 BACKUP_DIR_ENV = "CLAUDE_EXPORT_BACKUP_DIR"
 STATE_FILE = "download-state.json"
 SETTLE_SECONDS = 2
+URL_OPENERS = {"darwin": "open", "linux": "xdg-open"}
 
 # Extracted paths that map onto the legacy flat layout. A bare filename is a
 # JSON array concatenated across parts; a directory name is a tree of one
@@ -76,7 +77,13 @@ def export_name(manifest):
 
 def open_links(manifest_path, assume_yes):
     """Hand the single-use URLs straight to the browser, never to the terminal."""
-    command = f"jq -r '.data_files[].export_url' {json.dumps(str(manifest_path))} | xargs -n1 open"
+    opener = URL_OPENERS.get(sys.platform)
+    if opener is None:
+        log(f"No known way to open links in a browser on {sys.platform}.")
+        log("Open each export_url from the manifest yourself, then re-run.")
+        return False
+    manifest_arg = json.dumps(str(manifest_path))
+    command = f"jq -r '.data_files[].export_url' {manifest_arg} | xargs -n1 {opener}"
     log("The export links need your logged-in browser session. Proposed command:")
     log(f"\n    {command}\n")
     log("It pipes the URLs from the manifest straight into the browser; they are")
