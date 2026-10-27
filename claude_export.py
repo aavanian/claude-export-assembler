@@ -216,20 +216,24 @@ def stage(manifest, manifest_path, export_dir, downloads_dir, wait, assume_yes):
 
 
 def extract(entries, parts_dir, raw_dir):
-    """Unpack parts in manifest order; returns category -> extracted root."""
+    """Unpack each part into its own directory, in manifest order.
+
+    Sharded parts of one category carry the same member names, so they must
+    not share a directory. Returns (entry, extracted root) pairs.
+    """
     if raw_dir.exists():
         shutil.rmtree(raw_dir)
-    roots = {}
+    extracted = []
     for entry in entries:
-        root = raw_dir / entry["category"]
-        root.mkdir(parents=True, exist_ok=True)
+        root = raw_dir / entry["category"] / Path(entry["filename"]).stem
+        root.mkdir(parents=True)
         with zipfile.ZipFile(parts_dir / entry["filename"]) as zf:
             for member in zf.namelist():
                 if member.startswith("/") or ".." in Path(member).parts:
                     die(f"{entry['filename']} contains an unsafe path: {member}")
             zf.extractall(root)
-        roots.setdefault(entry["category"], []).append(root)
-    return roots
+        extracted.append((entry, root))
+    return extracted
 
 
 def assemble(manifest, export_dir):
@@ -241,12 +245,9 @@ def assemble(manifest, export_dir):
         shutil.rmtree(out_dir)
     out_dir.mkdir(parents=True)
 
-    extract(entries, parts_dir, raw_dir)
-
     merged = {}
     unmapped = []
-    for entry in entries:
-        root = raw_dir / entry["category"]
+    for entry, root in extract(entries, parts_dir, raw_dir):
         for path in sorted(p for p in root.rglob("*") if p.is_file()):
             rel = path.relative_to(root)
             top = rel.parts[0]
