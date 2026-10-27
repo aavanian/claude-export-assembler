@@ -99,18 +99,18 @@ def open_links(manifest_path, assume_yes):
     return True
 
 
-def settled_size(path):
-    """Size of a file that has stopped growing, else None."""
+def size_of(path):
     try:
-        first = path.stat().st_size
+        return path.stat().st_size
     except OSError:
         return None
+
+
+def settled(paths):
+    """The non-empty files among paths that stopped growing over one shared pause."""
+    before = {path: size_of(path) for path in paths}
     time.sleep(SETTLE_SECONDS)
-    try:
-        second = path.stat().st_size
-    except OSError:
-        return None
-    return second if first == second and second > 0 else None
+    return {path for path in paths if before[path] and size_of(path) == before[path]}
 
 
 def collect(entries, downloads_dir, parts_dir, wait):
@@ -122,11 +122,12 @@ def collect(entries, downloads_dir, parts_dir, wait):
     log(f"\nCollecting {len(pending)} part(s) from {downloads_dir} …")
     announced = set()
     while pending:
-        for name in sorted(pending):
-            source = downloads_dir / name
-            if not source.exists():
-                continue
-            if settled_size(source) is None:
+        arrived = [downloads_dir / name for name in sorted(pending)]
+        arrived = [source for source in arrived if source.exists()]
+        ready = settled(arrived) if arrived else set()
+        for source in arrived:
+            name = source.name
+            if source not in ready:
                 if name not in announced:
                     log(f"  [wait] {name} still downloading …")
                     announced.add(name)
