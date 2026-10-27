@@ -20,7 +20,7 @@ import sys
 import tempfile
 import time
 import zipfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 DEFAULT_BACKUP_DIR = Path.home() / "Claude Export Backup"
@@ -69,16 +69,13 @@ def confirm(prompt, assume_yes):
 
 
 def export_name(manifest):
-    stamp = datetime.fromisoformat(manifest["created_at"]).astimezone(timezone.utc)
+    stamp = datetime.fromisoformat(manifest["created_at"]).astimezone(UTC)
     return f"claude-export-{stamp:%Y-%m-%d-%H-%M-%S}"
 
 
 def open_links(manifest_path, assume_yes):
     """Hand the single-use URLs straight to the browser, never to the terminal."""
-    command = (
-        f"jq -r '.data_files[].export_url' {json.dumps(str(manifest_path))} "
-        "| xargs -n1 open"
-    )
+    command = f"jq -r '.data_files[].export_url' {json.dumps(str(manifest_path))} | xargs -n1 open"
     log("The export links need your logged-in browser session. Proposed command:")
     log(f"\n    {command}\n")
     log("It pipes the URLs from the manifest straight into the browser; they are")
@@ -181,7 +178,7 @@ def verify(entries, parts_dir, export_dir):
             "category": entry["category"],
             "part": entry["part"],
             "batch_index": entry["batch_index"],
-            "verified_at": datetime.now(timezone.utc).isoformat(),
+            "verified_at": datetime.now(UTC).isoformat(),
         }
         log(f"  [ok  ] {name} ({size:,} B, ZIP CRCs pass, sha256 {digest[:16]}…)")
         verified.append(name)
