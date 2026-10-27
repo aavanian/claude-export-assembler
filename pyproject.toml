@@ -1,5 +1,5 @@
 [project]
-name = "claude-downloader"
+name = "claude-export-assembler"
 version = "0.1.0"
 description = "Stage, verify and reassemble a claude.ai data export from its manifest"
 readme = "README.md"

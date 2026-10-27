@@ -10,7 +10,7 @@ exclude-newer-span = "P7D"
 certifi = false
 
 [[package]]
-name = "claude-downloader"
+name = "claude-export-assembler"
 version = "0.1.0"
 source = { virtual = "." }
 
