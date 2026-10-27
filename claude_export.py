@@ -169,7 +169,8 @@ def verify(entries, parts_dir, export_dir):
             total += size
             continue
 
-        head = target.open("rb").read(64).lstrip().lower()
+        with target.open("rb") as fh:
+            head = fh.read(64).lstrip().lower()
         if head.startswith((b"<!doctype html", b"<html")):
             die(
                 f"{name} is a claude.ai web page, not export data ({size:,} B of "
@@ -244,6 +245,13 @@ def extract(entries, parts_dir, raw_dir):
     return extracted
 
 
+def legacy_target(rel):
+    """The legacy file an extracted path merges into, or None."""
+    if len(rel.parts) == 1 and rel.name in LEGACY_FILES:
+        return LEGACY_FILES[rel.name]
+    return LEGACY_DIRS.get(rel.parts[0])
+
+
 def assemble(manifest, export_dir):
     entries = sorted(manifest["data_files"], key=lambda e: e["batch_index"])
     parts_dir = export_dir / "parts"
@@ -258,17 +266,10 @@ def assemble(manifest, export_dir):
     for entry, root in extract(entries, parts_dir, raw_dir):
         for path in sorted(p for p in root.rglob("*") if p.is_file()):
             rel = path.relative_to(root)
-            top = rel.parts[0]
-            if len(rel.parts) == 1 and top in LEGACY_FILES:
+            target = legacy_target(rel)
+            if target:
                 data = json.loads(path.read_text())
-                merged.setdefault(LEGACY_FILES[top], []).extend(
-                    data if isinstance(data, list) else [data]
-                )
-            elif top in LEGACY_DIRS:
-                data = json.loads(path.read_text())
-                merged.setdefault(LEGACY_DIRS[top], []).extend(
-                    data if isinstance(data, list) else [data]
-                )
+                merged.setdefault(target, []).extend(data if isinstance(data, list) else [data])
             else:
                 destination = out_dir / rel
                 destination.parent.mkdir(parents=True, exist_ok=True)
