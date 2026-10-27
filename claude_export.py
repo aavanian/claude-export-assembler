@@ -3,6 +3,7 @@
 # requires-python = ">=3.11"
 # dependencies = []
 # ///
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Stage and assemble a claude.ai data export from its manifest.
 
 The export URLs are single-use credentials tied to a logged-in browser
